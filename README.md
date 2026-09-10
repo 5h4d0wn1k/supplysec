@@ -1,4 +1,5 @@
 # supplysec
+![tests](https://github.com/5h4d0wn1k/supplysec/actions/workflows/ci.yml/badge.svg) ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
 Supply-chain security gate — dependency manifest parsing, SBOM generation
 (CycloneDX 1.4/1.5 + SPDX 2.3), offline advisory matching, license/policy gate,
@@ -146,3 +147,6 @@ python3 -m unittest discover -s tests
 ## License
 
 MIT — see LICENSE. Authorized use only; see the legal block above.
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md).
