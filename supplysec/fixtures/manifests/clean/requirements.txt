@@ -1,0 +1,7 @@
+urllib3==2.2.3
+jinja2==3.1.6
+django==4.2.15
+flask==3.0.3
+requests==2.32.3
+packaging==24.1
+cryptography==42.0.8

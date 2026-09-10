@@ -1,0 +1,51 @@
+{
+  "keys": [
+    {
+      "id": "old-root-rsa-512",
+      "type": "RSA",
+      "key_size_bits": 512,
+      "signature_algorithm": "sha1WithRSAEncryption"
+    },
+    {
+      "id": "server-rsa-2048",
+      "type": "RSA",
+      "key_size_bits": 2048,
+      "signature_algorithm": "sha256WithRSAEncryption"
+    },
+    {
+      "id": "new-rsa-4096",
+      "type": "RSA",
+      "key_size_bits": 4096,
+      "signature_algorithm": "sha384WithRSAEncryption"
+    },
+    {
+      "id": "legacy-dsa-1024",
+      "type": "DSA",
+      "key_size_bits": 1024
+    },
+    {
+      "id": "ecdsa-p256",
+      "type": "ECDSA",
+      "curve": "P-256",
+      "key_size_bits": 256,
+      "signature_algorithm": "sha256WithECDSA"
+    },
+    {
+      "id": "ecdsa-p521",
+      "type": "ECDSA",
+      "curve": "P-521",
+      "key_size_bits": 521,
+      "signature_algorithm": "sha512WithECDSA"
+    }
+  ],
+  "certificates": [
+    {
+      "id": "legacy-web-cert",
+      "signature_algorithm": "sha1WithRSAEncryption"
+    },
+    {
+      "id": "modern-api-cert",
+      "signature_algorithm": "sha256WithECDSA"
+    }
+  ]
+}

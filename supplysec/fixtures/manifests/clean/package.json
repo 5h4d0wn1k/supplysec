@@ -1,0 +1,11 @@
+{
+  "name": "labapp",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.19.2",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "lodash": "^4.17.21"
+  }
+}

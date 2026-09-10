@@ -1,0 +1,14 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    actionpack (7.1.0)
+    activemodel (7.1.0)
+    nokogiri (1.16.2)
+    rack (3.0.9)
+    railties (7.1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  rails (~> 7.1.0)

@@ -1,0 +1,8 @@
+{
+  "cve_critical_deny": true,
+  "cve_high_warn": true,
+  "cve_medium_warn": true,
+  "license_deny": ["GPL-3.0", "AGPL-3.0", "GPL-3.0-or-later", "unknown"],
+  "version_pinning_require": true,
+  "package_version_unknown_deny": true
+}
