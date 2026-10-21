@@ -101,3 +101,55 @@ class TestSubcommands(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestFailClosedOnMissingInputs(unittest.TestCase):
+    """#13: a gate that answers PASS over inputs it never read is worse than no gate."""
+
+    def test_advisory_missing_manifest_fails_closed(self):
+        proc = run_cli("advisory", "/nonexistent-manifest.txt")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+
+    def test_license_missing_manifest_fails_closed(self):
+        proc = run_cli("license", "/nonexistent-manifest.txt")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+
+    def test_policy_missing_manifest_fails_closed(self):
+        proc = run_cli("policy", "/nonexistent-manifest.txt")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+        self.assertNotIn("PASS", proc.stdout)
+
+    def test_sbom_missing_manifest_fails_closed(self):
+        proc = run_cli("sbom", "/nonexistent-manifest.txt")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+
+    def test_report_missing_manifest_writes_nothing(self):
+        out = Path("/tmp/reports_missing_manifest")
+        if out.exists():
+            import shutil
+            shutil.rmtree(out)  # a previous run's artifact must not answer this test
+        proc = run_cli("report", "/nonexistent-manifest.txt", "-o", str(out))
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+        self.assertFalse(out.exists(), "a PASS report artifact must not be written for an unread input")
+
+    def test_one_missing_manifest_among_real_ones_fails_closed(self):
+        real = str(CLEAN / "requirements.txt")
+        proc = run_cli("policy", real, "/nonexistent-manifest.txt")
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("ERROR: manifest not found: /nonexistent-manifest.txt", proc.stderr)
+
+    def test_an_empty_manifest_fails_closed_too(self):
+        # The parsers are keyed by manifest name, so the empty file must be
+        # a real requirements.txt.
+        empty_dir = Path("/tmp/ss_empty_manifest")
+        empty_dir.mkdir(parents=True, exist_ok=True)
+        (empty_dir / "requirements.txt").write_text("# no dependencies here\n")
+        empty = str(empty_dir / "requirements.txt")
+        for sub in ("advisory", "license", "policy"):
+            proc = run_cli(sub, empty)
+            self.assertEqual(proc.returncode, 1, f"{sub}: {proc.stdout}{proc.stderr}")
+            self.assertIn("ERROR: no dependencies found", proc.stderr)

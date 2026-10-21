@@ -18,7 +18,34 @@ def _out_dir(args) -> Path:
     return Path(args.output) if hasattr(args, "output") and args.output else DEFAULT_OUTPUT
 
 
+def _load_deps(manifests):
+    """Every dependency from every manifest, or None when an input is missing.
+
+    A gate that answers PASS over inputs it never read is worse than no gate
+    (#13): CI goes green on a typo'd path. A missing manifest is an error on
+    every command that consumes one, and so is a set of manifests that parses
+    to nothing — fail closed, like `manifest` does.
+    """
+    from .manifest import parse_manifest
+    deps, missing = [], []
+    for m in manifests:
+        p = Path(m)
+        if p.exists():
+            deps.extend(parse_manifest(p))
+        else:
+            missing.append(m)
+    if missing:
+        for m in missing:
+            print(f"ERROR: manifest not found: {m}", file=sys.stderr)
+        return None
+    if not deps:
+        print("ERROR: no dependencies found", file=sys.stderr)
+        return None
+    return deps
+
+
 def cmd_manifest(args):
+
     """Parse dependency manifests."""
     from .manifest import parse_manifest
     all_deps = []
@@ -43,15 +70,9 @@ def cmd_manifest(args):
 
 def cmd_sbom(args):
     """Generate SBOM from manifest."""
-    from .manifest import parse_manifest
     from .sbom import write_sbom
-    deps = []
-    for m in args.manifests:
-        p = Path(m)
-        if p.exists():
-            deps.extend(parse_manifest(p))
-    if not deps:
-        print("ERROR: no dependencies found", file=sys.stderr)
+    deps = _load_deps(args.manifests)
+    if deps is None:
         return 1
     out = _out_dir(args)
     paths = write_sbom(deps, out, args.cdx_version, args.spdx_version)
@@ -61,15 +82,12 @@ def cmd_sbom(args):
 
 def cmd_advisory(args):
     """Match dependencies against offline advisory DB."""
-    from .manifest import parse_manifest
     from .advisory import load_advisory_db, match_advisories
     db_path = args.advisory_db or str(FIXTURES_DIR / "advisory_db.json")
     advisories = load_advisory_db(db_path)
-    deps = []
-    for m in args.manifests:
-        p = Path(m)
-        if p.exists():
-            deps.extend(parse_manifest(p))
+    deps = _load_deps(args.manifests)
+    if deps is None:
+        return 1
     findings = match_advisories(deps, advisories)
     print(f"Advisory DB: {len(advisories)} entries, {len(findings)} finding(s)")
     for f in findings:
@@ -82,15 +100,12 @@ def cmd_advisory(args):
 
 def cmd_license(args):
     """Scan licenses against policy."""
-    from .manifest import parse_manifest
     from .license import load_license_db, scan_licenses, check_license_policy
     lic_db_path = args.license_db or str(FIXTURES_DIR / "licenses.json")
     license_db = load_license_db(lic_db_path)
-    deps = []
-    for m in args.manifests:
-        p = Path(m)
-        if p.exists():
-            deps.extend(parse_manifest(p))
+    deps = _load_deps(args.manifests)
+    if deps is None:
+        return 1
     lic_infos = scan_licenses(deps, license_db)
     checks = check_license_policy(lic_infos, strict_mode=args.strict)
     denied = [c for c in checks if not c.allowed]
@@ -104,7 +119,6 @@ def cmd_license(args):
 
 def cmd_policy(args):
     """Evaluate full policy gate."""
-    from .manifest import parse_manifest
     from .advisory import load_advisory_db, match_advisories
     from .license import load_license_db, scan_licenses, check_license_policy
     from .policy import load_policy, evaluate_gate
@@ -115,11 +129,9 @@ def cmd_policy(args):
     lic_db_path = str(FIXTURES_DIR / "licenses.json")
     license_db = load_license_db(lic_db_path)
 
-    deps = []
-    for m in args.manifests:
-        p = Path(m)
-        if p.exists():
-            deps.extend(parse_manifest(p))
+    deps = _load_deps(args.manifests)
+    if deps is None:
+        return 1
 
     findings = match_advisories(deps, advisories)
     lic_infos = scan_licenses(deps, license_db)
@@ -180,11 +192,9 @@ def cmd_report(args):
     pqc_path = str(FIXTURES_DIR / "keys" / "sample_keys.json")
     fw_path = str(FIXTURES_DIR / "firmware" / "sample_fw.bin")
 
-    deps = []
-    for m in args.manifests:
-        p = Path(m)
-        if p.exists():
-            deps.extend(parse_manifest(p))
+    deps = _load_deps(args.manifests)
+    if deps is None:
+        return 1
 
     findings = match_advisories(deps, advisories)
     lic_infos = scan_licenses(deps, license_db)
