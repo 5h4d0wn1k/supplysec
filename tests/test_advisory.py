@@ -105,5 +105,45 @@ class TestAdvisoryDBFixture(unittest.TestCase):
         self.assertEqual(len(findings), 0)
 
 
+class TestAdvisoryDBShapes(unittest.TestCase):
+    """A user-supplied --advisory-db must load in both supported shapes (#25)."""
+
+    def _write(self, tmpdir, payload):
+        import json
+        path = Path(tmpdir) / "db.json"
+        path.write_text(json.dumps(payload))
+        return path
+
+    def test_bare_list_database_loads(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, [
+                {"cve_id": "CVE-2026-0001", "package": "urllib3",
+                 "introduced": "1.0.0", "fixed": "9.9.9"},
+            ])
+            advisories = load_advisory_db(path)
+        self.assertEqual([a.cve_id for a in advisories], ["CVE-2026-0001"])
+        deps = [Dependency("urllib3", "2.1.0", "pypi", "requirements.txt")]
+        findings = match_advisories(deps, advisories)
+        self.assertEqual(len(findings), 1)
+
+    def test_advisories_object_database_still_loads(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, {"advisories": [
+                {"cve_id": "CVE-2026-0002", "package": "urllib3",
+                 "introduced": "1.0.0", "fixed": "9.9.9"},
+            ]})
+            advisories = load_advisory_db(path)
+        self.assertEqual([a.cve_id for a in advisories], ["CVE-2026-0002"])
+
+    def test_other_json_shapes_yield_no_advisories(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, "not a database")
+            advisories = load_advisory_db(path)
+        self.assertEqual(advisories, [])
+
+
 if __name__ == "__main__":
     unittest.main()

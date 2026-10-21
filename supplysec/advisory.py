@@ -56,8 +56,18 @@ class Finding:
 def load_advisory_db(path: str | Path) -> list[Advisory]:
     """Load advisory database from JSON fixture."""
     data = json.loads(Path(path).read_text())
+    # Accept a bare list of advisories as well as {"advisories": [...]}.
+    # The old data.get(...) evaluated `data.get` on a list before the
+    # isinstance branch could choose it, so bare-list databases raised
+    # AttributeError and the supported second shape was unreachable (#25).
+    if isinstance(data, list):
+        entries = data
+    elif isinstance(data, dict):
+        entries = data.get("advisories", [])
+    else:
+        entries = []
     advisories: list[Advisory] = []
-    for entry in data.get("advisories", data if isinstance(data, list) else []):
+    for entry in entries:
         advisories.append(Advisory(
             cve_id=entry["cve_id"],
             package=entry["package"],
